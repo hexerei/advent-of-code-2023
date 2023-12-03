@@ -124,15 +124,17 @@ impl Map {
         sum
     }
 
+    /// TODO: This is not working yet - need to concider distance between values
     fn sum_gears(&self) -> u32 {
         let mut sum = 0;
 
         for symbol in &self.symbols {
+            println!("SYMBOL: {:?}", symbol);
             let mut lhs = 0u32;
             let mut rhs = 0u32;
-            let rows = [(symbol.line as i32 - 1), symbol.line as i32, symbol.line as i32 + 1];
+            // let rows = [(symbol.line as i32 - 1), symbol.line as i32, symbol.line as i32 + 1];
             for value in &self.values {
-                if rows.contains(&(value.line as i32)) {
+                if self.is_close(&symbol, &value) {
                     if lhs == 0 {
                         lhs = value.value;
                     } else {
@@ -141,10 +143,25 @@ impl Map {
                 }
             }
             if lhs != 0 && rhs != 0 {
+                println!("LHS: {:?} RHS: {:?}", lhs, rhs);
                 sum += lhs * rhs;
             }
         }
         sum
+    }
+    fn is_close(&self, sym: &Symbol, val: &Value) -> bool {
+        let rows = [(val.line as i32 - 1), val.line as i32, val.line as i32 + 1];
+        let cols = [val.start as i32 - 1, val.end as i32 + 1];
+        if rows.contains(&(sym.line as i32))
+        && sym.start as i32 >= cols[0]
+        && sym.start as i32 <= cols[1]
+        && sym.end as i32  >= cols[0]
+        && sym.end as i32  <= cols[1] {
+            // println!("--- MATCH ---");
+            return true;
+        }
+        // println!("--- NO MATCH ---");
+        false
     }
 
 }
