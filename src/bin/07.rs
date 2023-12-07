@@ -77,7 +77,7 @@ fn eval_hand(hand: &[u8; 5]) -> Strength {
     }
 }
 
-fn eval_game(mut game: Vec<([u8; 5], Int, u8)>) -> Vec<([u8; 5], Int, u8)> {
+fn eval_game(mut game: Vec<([u8; 5], Int, u8)>) -> u32 {
     // calculate hand strength
     for (hand, _, strength) in game.iter_mut() {
         *strength = eval_hand(hand) as u8;
@@ -95,10 +95,7 @@ fn eval_game(mut game: Vec<([u8; 5], Int, u8)>) -> Vec<([u8; 5], Int, u8)> {
     for (i, (_, bid, _)) in game.iter_mut().enumerate() {
         *bid *= i as u32 + 1;
     }
-    game
-}
-
-fn total_wins(game: Vec<([u8; 5], Int, u8)>) -> u32 {
+    // return sum of all wins
     game.iter().map(|(_, bid, _)| *bid).sum()
 }
 
@@ -109,11 +106,11 @@ fn total_wins(game: Vec<([u8; 5], Int, u8)>) -> u32 {
 // }
 
 pub fn part_one(input: &str) -> Option<u32> {
-    Some(total_wins(eval_game(parse_game(input, false))))
+    Some(eval_game(parse_game(input, false)))
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
-    Some(total_wins(eval_game(parse_game(input, true))))
+    Some(eval_game(parse_game(input, true)))
 }
 
 #[cfg(test)]
