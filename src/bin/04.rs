@@ -1,80 +1,61 @@
 advent_of_code::solution!(4);
 
 fn parse_line(line: &str) -> (Vec<u32>, Vec<u32>) {
-    // get first and last part of line
     let (_, line) = line.split_at(line.find(":").unwrap());
     let (first, last) = line.split_at(line.find("|").unwrap());
-    //println!("First: {:?}\nLast: {:?}", first, last);
-    let winners = parse_numbers(first);
-    let numbers = parse_numbers(last);
-    //println!("Winners: {:?}\nNumbers: {:?}", winners, numbers);
-    (winners, numbers)
+    (parse_numbers(first), parse_numbers(last))
 }
+
 fn parse_numbers(line: &str) -> Vec<u32> {
-    let mut numbers = Vec::new();
     let line = line.trim().replace("  ", " ");
-    let line = line.split(" ");
-    for n in line {
-        let n = n.trim();
-        let n = n.parse::<u32>();
-        if n.is_err() {
-            continue;
+    line.split_whitespace().filter_map(|n| {
+        match n.trim().parse::<u32>() {
+            Ok(n) => Some(n),
+            Err(_) => None,
         }
-        numbers.push(n.unwrap());
-    }
-    numbers
+    }).collect::<Vec<_>>()
 }
+
 fn score(winners: &Vec<u32>, numbers: &Vec<u32>) -> u32 {
-    let mut score: f32 = 0.5;
-    for winner in winners {
-        for number in numbers {
-            if winner == number {
-                score *= 2.;
-            }
-        }
-    }
-    if score == 0.5 {
-        score = 0.;
-    }
-    //println!("Score: {}", score as u32);
-    score as u32
+    winners.iter().fold(0.5, |acc, n|
+        acc * (numbers.iter().filter_map(|m| if m==n {Some(2)} else {None}).product::<u32>() as f64)
+    ) as u32
 }
+
 fn count(winners: &Vec<u32>, numbers: &Vec<u32>) -> u32 {
-    let mut score: u32 = 0;
-    for winner in winners {
-        for number in numbers {
-            if winner == number {
-                score += 1;
-            }
-        }
-    }
-    score
+    winners.iter().fold(0, |acc, n|
+        acc + numbers.iter().filter(|&m| m==n).count()
+    ) as u32
 }
 
 pub fn part_one(input: &str) -> Option<u32> {
-    let mut scores = Vec::new();
-    for line in input.lines() {
+    Some(input.lines().filter_map(|line| {
         if line.starts_with("Card") {
             let (winners, numbers) = parse_line(line);
-            let score = score(&winners, &numbers);
-            scores.push(score);
+            Some(score(&winners, &numbers))
+        } else {
+            None
         }
-    }
-    Some(scores.iter().sum())
+    }).collect::<Vec<_>>().iter().sum())
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
+    let scores = input.lines().filter_map(|line| {
+        if line.starts_with("Card") {
+            let (winners, numbers) = parse_line(line);
+            Some(score(&winners, &numbers))
+        } else {
+            None
+        }
+    }).collect::<Vec<_>>()
     let mut scores = Vec::new();
-    let mut total_cards: u32 = 0;
     for line in input.lines() {
         if line.starts_with("Card") {
             let (winners, numbers) = parse_line(line);
             let score = count(&winners, &numbers);
             scores.push(score);
-            total_cards += 1;
         }
     }
-    println!("Scores: {:?} = {} cards", scores, total_cards);
     let mut cards = Vec::with_capacity(scores.len());
     for _ in 0..scores.len() {
         cards.push(1);
@@ -92,7 +73,6 @@ pub fn part_two(input: &str) -> Option<u32> {
             }
         }
     }
-    //println!("Cards: {:?}", cards);
     Some(cards.iter().sum())
 }
 
