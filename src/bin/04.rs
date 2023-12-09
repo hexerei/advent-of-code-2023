@@ -43,23 +43,12 @@ pub fn part_two(input: &str) -> Option<u32> {
     let scores = input.lines().filter_map(|line| {
         if line.starts_with("Card") {
             let (winners, numbers) = parse_line(line);
-            Some(score(&winners, &numbers))
+            Some(count(&winners, &numbers))
         } else {
             None
         }
-    }).collect::<Vec<_>>()
-    let mut scores = Vec::new();
-    for line in input.lines() {
-        if line.starts_with("Card") {
-            let (winners, numbers) = parse_line(line);
-            let score = count(&winners, &numbers);
-            scores.push(score);
-        }
-    }
-    let mut cards = Vec::with_capacity(scores.len());
-    for _ in 0..scores.len() {
-        cards.push(1);
-    }
+    }).collect::<Vec<_>>();
+    let mut cards = scores.iter().map(|_| 1u32).collect::<Vec<_>>();
     for index in 0..scores.len() {
         let score = scores[index] as usize;
         let lb = index + 1;
