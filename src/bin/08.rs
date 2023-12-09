@@ -71,12 +71,12 @@ fn lcm(a:usize, b:usize) -> usize{
 //     return 0;
 // }
 
-pub fn part_one(input: &str) -> Option<u32> {
+pub fn part_one(input: &str) -> Option<usize> {
     let (path, tree) = parse_game(input);
-    Some(solve_path("AAA", "ZZZ", &path, &tree) as u32)
+    Some(solve_path("AAA", "ZZZ", &path, &tree))
 }
 
-pub fn part_two(input: &str) -> Option<u32> {
+pub fn part_two(input: &str) -> Option<usize> {
     let (path, tree) = parse_game(input);
     let result = tree.keys()
         .filter_map(|parent| match parent.ends_with("A") {
@@ -87,8 +87,7 @@ pub fn part_two(input: &str) -> Option<u32> {
         .collect::<Vec<_>>()
         .iter().fold(1, |acc, &count| lcm(acc, count));
     // .iter().fold(1, |acc, &count| acc * get_prime(count)) * path.len();
-    println!("Got {}", result);
-    Some(result as u32)
+    Some(result)
 }
 
 #[cfg(test)]
