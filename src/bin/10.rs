@@ -6,7 +6,7 @@ advent_of_code::solution!(10);
 // .L-J.
 // .....
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 enum Direction {
     None,
     North,
@@ -163,7 +163,59 @@ fn print_game(game: &Vec<Vec<Option<Segment>>>) {
     }
 }
 
+fn walk_pipe(game: &Vec<Vec<Option<Segment>>>, start: (usize, usize)) -> usize {
+    let mut steps: usize = 0;
+    let mut next = game[start.0][start.1].unwrap().0;
+    let mut row = start.0;
+    let mut col = start.1;
+    loop {
+        match next {
+            Direction::North => {
+                row -= 1;
+                let (s, e) = game[row][col].unwrap();
+                next = if s == Direction::South { e } else { s };
+            },
+            Direction::West => {
+                col -= 1;
+                let (s, e) = game[row][col].unwrap();
+                next = if s == Direction::East { e } else { s };
+            },
+            Direction::East => {
+                col += 1;
+                let (s, e) = game[row][col].unwrap();
+                next = if s == Direction::West { e } else { s };
+            },
+            Direction::South => {
+                row += 1;
+                let (s, e) = game[row][col].unwrap();
+                next = if s == Direction::North { e } else { s };
+            },
+            _ => break,
+        }
+        steps += 1;
+        //println!("({}, {}) - {:?}", row, col, next);
+        if (row, col) == start {
+            break;
+        }
+    }
+    steps
+ }
+
 pub fn part_one(input: &str) -> Option<u32> {
+    let mut game = parse_game(input);
+    let (fixed, (row, col)) = fix_pipe(&mut game);
+    game[row][col] = Some(fix_start(&game, row, col));
+    let mut fixed = fixed;
+    while fixed {
+        fixed = fix_pipe(&mut game).0;
+    }
+    print_game(&game);
+    let steps = walk_pipe(&game, (row, col));
+    println!("Walked the pipe in {} steps", steps);
+    Some((steps/2) as u32)
+}
+
+pub fn part_two(input: &str) -> Option<u32> {
     let mut game = parse_game(input);
     let (fixed, (row, col)) = fix_pipe(&mut game);
     game[row][col] = Some(fix_start(&game, row, col));
@@ -175,23 +227,23 @@ pub fn part_one(input: &str) -> Option<u32> {
     None
 }
 
-pub fn part_two(input: &str) -> Option<u32> {
-    None
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn test_part_one() {
-        let result = part_one(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, Some(4));
+        let result = part_one("..F7.
+.FJ|.
+SJ.L7
+|F--J
+LJ...");
+        assert_eq!(result, Some(8));
     }
 
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(4));
     }
 }
