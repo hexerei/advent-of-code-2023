@@ -91,8 +91,9 @@ fn check_segment(game: &Vec<Vec<Option<Segment>>>, row: usize, col: usize) -> bo
     true
 }
 
-fn fix_pipe(game: &mut Vec<Vec<Option<Segment>>>) -> (usize, usize, (Direction, Direction)) {
+fn fix_pipe(game: &mut Vec<Vec<Option<Segment>>>) -> (bool, (usize, usize)) {
     let mut start: (usize, usize) = (0, 0);
+    let mut fixed = false;
     for row in 0..game.len() {
         for col in 0..game[row].len() {
             if game[row][col].is_some() {
@@ -104,11 +105,15 @@ fn fix_pipe(game: &mut Vec<Vec<Option<Segment>>>) -> (usize, usize, (Direction, 
                 }
                 if !check_segment(game, row, col) {
                     game[row][col] = None;
+                    fixed = true;
                 }
             }
         }
     }
-    let (row, col) = start;
+    (fixed, start)
+ }
+
+fn fix_start(game: &Vec<Vec<Option<Segment>>>, row: usize, col: usize) -> (Direction, Direction) {
     let mut start = (Direction::None, Direction::None);
     if game[row][col].is_some() {
         // north
@@ -136,7 +141,7 @@ fn fix_pipe(game: &mut Vec<Vec<Option<Segment>>>) -> (usize, usize, (Direction, 
             start = ( start.0, Direction::South );
         }
     }
-    (row, col, start)
+    start
 }
 
 fn print_game(game: &Vec<Vec<Option<Segment>>>) {
@@ -160,9 +165,12 @@ fn print_game(game: &Vec<Vec<Option<Segment>>>) {
 
 pub fn part_one(input: &str) -> Option<u32> {
     let mut game = parse_game(input);
-    //dbg!(&game);
-    let (row, col, start) = fix_pipe(&mut game);
-    game[row][col] = Some(start);
+    let (fixed, (row, col)) = fix_pipe(&mut game);
+    game[row][col] = Some(fix_start(&game, row, col));
+    let mut fixed = fixed;
+    while fixed {
+        fixed = fix_pipe(&mut game).0;
+    }
     print_game(&game);
     None
 }
