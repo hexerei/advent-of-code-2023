@@ -65,17 +65,6 @@ fn expand(game: Vec<Vec<u8>>, steps: usize) -> Vec<(usize, usize)> {
     new_game
 }
 
-fn print_game(game: &Vec<(usize, usize)>) {
-    let max_row = game.iter().fold(0, |acc, &(row, _)| acc.max(row));
-    let max_col = game.iter().fold(0, |acc, &(_, col)| acc.max(col));
-    for row in 0..max_row + 1 {
-        for col in 0..max_col + 1 {
-            print!("{}", if game.contains(&(row, col)) { '#' } else { '.' });
-        }
-        println!();
-    }
-}
-
 fn get_pairs(points: &Vec<(usize, usize)>) -> Vec<usize> {
     let mut matched = HashSet::new();
     points.iter().enumerate().map(|(i, p1)|
@@ -92,16 +81,13 @@ fn get_pairs(points: &Vec<(usize, usize)>) -> Vec<usize> {
 
 
 pub fn part_one(input: &str) -> Option<usize> {
-    let points = expand(parse_game(input), 1);
-    //print_game(&points);
-    //println!("Extracted {} galaxies", points.len());
+    let points = expand(parse_game(input), 2);
     let pairs = get_pairs(&points);
     Some(pairs.iter().sum::<usize>())
 }
 
 pub fn part_two(input: &str) -> Option<usize> {
     let points = expand(parse_game(input), 1000000);
-    //println!("Extracted {} galaxies", points.len());
     let pairs = get_pairs(&points);
     Some(pairs.iter().sum::<usize>())
 }
