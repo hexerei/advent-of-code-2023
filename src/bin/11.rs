@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 advent_of_code::solution!(11);
 
 fn parse_game(input: &str) -> Vec<Vec<u8>> {
@@ -11,7 +13,7 @@ fn parse_game(input: &str) -> Vec<Vec<u8>> {
     }).collect::<Vec<_>>()
 }
 
-fn expand(game: &Vec<Vec<u8>>) -> Vec<Vec<u8>> {
+fn expand(game: Vec<Vec<u8>>, steps: usize) -> Vec<(usize, usize)> {
     // collect columns to expand
     let mut expand_cols = Vec::new();
     let width = game[0].len();
@@ -22,31 +24,14 @@ fn expand(game: &Vec<Vec<u8>>) -> Vec<Vec<u8>> {
             expand_cols.push(col);
         }
     }
-    let mut new_game = Vec::new();
+    let mut expand_rows = Vec::new();
     for row in 0..game.len() {
-        let mut new_row = game[row].clone();
-        let row_sum = new_row.iter().sum::<u8>();
-        let mut inserted: usize = 0;
-        for col in expand_cols.iter() {
-            if *col < width - 1 {
-                new_row.insert(*col + inserted, 0);
-            } else {
-                new_row.push(0);
-            }
-            inserted += 1;
-        }
-        if row_sum == 0 {
-            new_game.push(new_row.clone());
-            new_game.push(new_row);
-        } else {
-            new_game.push(new_row);
+        if game[row].iter().sum::<u8>() == 0 {
+            expand_rows.push(row);
         }
     }
-    new_game
-}
 
-fn get_points(game: &Vec<Vec<u8>>) -> Vec<(usize, usize)> {
-    game.iter().enumerate().map(|(row, line)|
+    let points = game.iter().enumerate().map(|(row, line)|
         line.iter().enumerate().filter_map(|(col, &cell)|
             if cell == 1 {
                 Some((row, col))
@@ -54,41 +39,71 @@ fn get_points(game: &Vec<Vec<u8>>) -> Vec<(usize, usize)> {
                 None
             }
         ).collect::<Vec<_>>()
-    ).collect::<Vec<_>>().concat()
+    ).collect::<Vec<_>>().concat();
+
+    let mut new_game = points.clone();
+    let step = steps - 1;
+    // let mut col_step = steps;
+    // let mut row_step = steps;
+    //let t = expand_cols.iter().map(|&c| c).collect::<Vec<_>>();
+    for (i, &(row, col)) in points.iter().enumerate() {
+        let (mut nrow, mut ncol) = (row, col);
+        for c in expand_cols.iter() {
+            if *c < col {
+                ncol += step;
+                //col_step += steps;
+            }
+        }
+        for r in expand_rows.iter() {
+            if *r < row {
+                nrow += step;
+                //row_step += steps;
+            }
+        }
+        new_game[i] = (nrow, ncol);
+    }
+    new_game
 }
 
-fn print_game(game: &Vec<Vec<u8>>) {
-    for row in game.iter() {
-        for col in row.iter() {
-            print!("{}", if *col == 1 { '#' } else { '.' });
+fn print_game(game: &Vec<(usize, usize)>) {
+    let max_row = game.iter().fold(0, |acc, &(row, _)| acc.max(row));
+    let max_col = game.iter().fold(0, |acc, &(_, col)| acc.max(col));
+    for row in 0..max_row + 1 {
+        for col in 0..max_col + 1 {
+            print!("{}", if game.contains(&(row, col)) { '#' } else { '.' });
         }
         println!();
     }
 }
 
-
-pub fn part_one(input: &str) -> Option<u32> {
-    let game = parse_game(input);
-    let game = expand(&game);
-    print_game(&game);
-    let points = get_points(&game);
-    println!("Extracted {} galaxies", points.len());
-    let mut matched = Vec::new();
-    let pairs = points.iter().enumerate().map(|(i, p1)|
+fn get_pairs(points: &Vec<(usize, usize)>) -> Vec<usize> {
+    let mut matched = HashSet::new();
+    points.iter().enumerate().map(|(i, p1)|
         points.iter().enumerate().filter_map(|(j, p2)|
-            if i == j || matched.contains(&(j, i)) || matched.contains(&(i, j)) {
+            if i == j || matched.contains(&(i.min(j), j.max(i))) {
                 None
             } else {
-                matched.push((i, j));
-                Some(((p1.0 as i32 - p2.0 as i32).abs() + (p1.1 as i32 - p2.1 as i32).abs()) as u32)
+                matched.insert((i.min(j), j.max(i)));
+                Some(((p1.0 as i32 - p2.0 as i32).abs() + (p1.1 as i32 - p2.1 as i32).abs()) as usize)
             }
         ).collect::<Vec<_>>()
-    ).collect::<Vec<_>>().concat();
-    Some(pairs.iter().sum::<u32>())
+    ).collect::<Vec<_>>().concat()
 }
 
-pub fn part_two(input: &str) -> Option<u32> {
-    None
+
+pub fn part_one(input: &str) -> Option<usize> {
+    let points = expand(parse_game(input), 1);
+    //print_game(&points);
+    //println!("Extracted {} galaxies", points.len());
+    let pairs = get_pairs(&points);
+    Some(pairs.iter().sum::<usize>())
+}
+
+pub fn part_two(input: &str) -> Option<usize> {
+    let points = expand(parse_game(input), 1000000);
+    //println!("Extracted {} galaxies", points.len());
+    let pairs = get_pairs(&points);
+    Some(pairs.iter().sum::<usize>())
 }
 
 #[cfg(test)]
@@ -104,6 +119,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(82000210));
     }
 }
