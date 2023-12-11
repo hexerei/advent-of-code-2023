@@ -163,8 +163,9 @@ fn print_game(game: &Vec<Vec<Option<Segment>>>) {
     }
 }
 
-fn walk_pipe(game: &Vec<Vec<Option<Segment>>>, start: (usize, usize)) -> usize {
+fn walk_pipe(game: &Vec<Vec<Option<Segment>>>, start: (usize, usize)) -> (usize, Vec<(usize, usize)>) {
     let mut steps: usize = 0;
+    let mut poly: Vec<(usize, usize)> = vec![start];
     let mut next = game[start.0][start.1].unwrap().0;
     let mut row = start.0;
     let mut col = start.1;
@@ -197,9 +198,26 @@ fn walk_pipe(game: &Vec<Vec<Option<Segment>>>, start: (usize, usize)) -> usize {
         if (row, col) == start {
             break;
         }
+        poly.push((row, col));
     }
-    steps
+    (steps, poly)
  }
+
+fn point_in_poly(poly: &Vec<(usize, usize)>, point: (usize, usize)) -> bool {
+    let mut inside = false;
+    let mut j = poly.len() - 1;
+    let (tx, ty) = (point.1 as i32, point.0 as i32);
+    for i in 0..poly.len() {
+        let (px, py) = (poly[i].1 as i32, poly[i].0 as i32);
+        let (lpx, lpy) = (poly[j].1 as i32, poly[j].0 as i32);
+        if ((py > ty) != (lpy > ty))
+        && (tx < (lpx - px) * (ty - py) / (lpy - py) + px) {
+            inside = !inside;
+        }
+        j = i;
+    }
+    inside
+}
 
 pub fn part_one(input: &str) -> Option<u32> {
     let mut game = parse_game(input);
@@ -210,7 +228,7 @@ pub fn part_one(input: &str) -> Option<u32> {
         fixed = fix_pipe(&mut game).0;
     }
     print_game(&game);
-    let steps = walk_pipe(&game, (row, col));
+    let (steps, _) = walk_pipe(&game, (row, col));
     println!("Walked the pipe in {} steps", steps);
     Some((steps/2) as u32)
 }
@@ -224,7 +242,22 @@ pub fn part_two(input: &str) -> Option<u32> {
         fixed = fix_pipe(&mut game).0;
     }
     print_game(&game);
-    None
+    let (_, poly) = walk_pipe(&game, (row, col));
+    let checked = game.iter().enumerate().map(|(row, line)|
+        line.iter().enumerate().filter_map(|(col, segment)|
+            if segment.is_none() {
+                if point_in_poly(&poly, (row, col)) {
+                    Some(1)
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        ).collect::<Vec<_>>()
+    ).flatten().collect::<Vec<_>>();
+    println!("{:?}\n{:?}", poly, checked);
+    Some(checked.len() as u32)
 }
 
 #[cfg(test)]
