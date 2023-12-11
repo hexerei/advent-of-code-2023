@@ -19,7 +19,7 @@ Solutions for [Advent of Code](https://adventofcode.com/) in [Rust](https://www.
 | [Day 8](https://adventofcode.com/2023/day/8) | ⭐ | ⭐ |
 | [Day 9](https://adventofcode.com/2023/day/9) | ⭐ | ⭐ |
 | [Day 10](https://adventofcode.com/2023/day/10) | ⭐ | ⭐ |
-| [Day 11](https://adventofcode.com/2023/day/11) | ⭐ |   |
+| [Day 11](https://adventofcode.com/2023/day/11) | ⭐ | ⭐ |
 <!--- advent_readme_stars table --->
 
 <!--- benchmarking table --->
@@ -27,17 +27,19 @@ Solutions for [Advent of Code](https://adventofcode.com/) in [Rust](https://www.
 
 | Day | Part 1 | Part 2 |
 | :---: | :---: | :---:  |
-| [Day 1](./src/bin/01.rs) | `473.2µs` | `523.2ms` |
-| [Day 2](./src/bin/02.rs) | `140.6µs` | `149.7µs` |
-| [Day 3](./src/bin/03.rs) | `44.3ms` | `47.1ms` |
-| [Day 4](./src/bin/04.rs) | `478.0µs` | `6.2ms` |
-| [Day 5](./src/bin/05.rs) | `47.7µs` | `466.6µs` |
-| [Day 6](./src/bin/06.rs) | `3.1µs` | `181.0ms` |
-| [Day 7](./src/bin/07.rs) | `182.8µs` | `183.3µs` |
-| [Day 8](./src/bin/08.rs) | `2.1ms` | `10.5ms` |
-| [Day 9](./src/bin/09.rs) | `629.6µs` | `652.8µs` |
+| [Day 1](./src/bin/01.rs) | `482.3µs` | `531.5ms` |
+| [Day 2](./src/bin/02.rs) | `142.1µs` | `144.7µs` |
+| [Day 3](./src/bin/03.rs) | `43.9ms` | `45.3ms` |
+| [Day 4](./src/bin/04.rs) | `493.0µs` | `6.1ms` |
+| [Day 5](./src/bin/05.rs) | `49.9µs` | `473.4µs` |
+| [Day 6](./src/bin/06.rs) | `3.0µs` | `181.9ms` |
+| [Day 7](./src/bin/07.rs) | `184.5µs` | `186.8µs` |
+| [Day 8](./src/bin/08.rs) | `2.1ms` | `10.2ms` |
+| [Day 9](./src/bin/09.rs) | `630.3µs` | `631.0µs` |
+| [Day 10](./src/bin/10.rs) | `418.8µs` | `82.3ms` |
+| [Day 11](./src/bin/11.rs) | `13.8ms` | `13.7ms` |
 
-**Total: 817.81ms**
+**Total: 934.64ms**
 <!--- benchmarking table --->
 
 ---
