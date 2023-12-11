@@ -60,32 +60,13 @@ impl Map {
         let rows = [(line as i32 - 1), line as i32, line as i32 + 1];
         let cols = [start as i32 - 1, end as i32 + 1];
         for symbol in &self.symbols {
-            // if rows.contains(&(symbol.line as i32)) {
-            //     println!("LIN {:?} IS in {:?}", symbol.line, rows);
-            // } else {
-            //     println!("LIN {:?} IS NOT in {:?}", symbol.line, rows);
-            // }
-            // if symbol.start as i32 >= cols[0]
-            // && symbol.start as i32 <= cols[1] {
-            //     println!("STA {:?} IS in {:?}", symbol.start, cols);
-            // } else {
-            //     println!("STA {:?} IS NOT in {:?}", symbol.start, cols);
-            // }
-            // if symbol.end as i32 >= cols[0]
-            // && symbol.end as i32 <= cols[1] {
-            //     println!("END {:?} IS in {:?}", symbol.end, cols);
-            // } else {
-            //     println!("END {:?} IS NOT in {:?}", symbol.end, cols);
-            // }
             if rows.contains(&(symbol.line as i32))
             && symbol.start as i32 >= cols[0]
             && symbol.start as i32 <= cols[1]
             && symbol.end as i32  >= cols[0]
             && symbol.end as i32  <= cols[1] {
-                // println!("--- MATCH ---");
                 return true;
             }
-            // println!("--- NO MATCH ---");
         }
         false
     }
@@ -94,7 +75,6 @@ impl Map {
         if strict {
             regex = Regex::new(r"\*").unwrap();
         };
-        // result will be an iterator over tuples containing the start and end indices for each match in the string
         let result = regex.captures_iter(line);
         for mat in result {
             let start = mat.get(0).unwrap().start();
@@ -104,7 +84,6 @@ impl Map {
     }
     fn parse(&mut self, line: &str, offset: usize) {
         let regex = Regex::new(r"[\d]+").unwrap();
-        // result will be an iterator over tuples containing the start and end indices for each match in the string
         let result = regex.captures_iter(line);
         for mat in result {
             let start = mat.get(0).unwrap().start();
@@ -124,15 +103,12 @@ impl Map {
         sum
     }
 
-    /// TODO: This is not working yet - need to concider distance between values
     fn sum_gears(&self) -> u32 {
         let mut sum = 0;
 
         for symbol in &self.symbols {
-            println!("SYMBOL: {:?}", symbol);
             let mut lhs = 0u32;
             let mut rhs = 0u32;
-            // let rows = [(symbol.line as i32 - 1), symbol.line as i32, symbol.line as i32 + 1];
             for value in &self.values {
                 if self.is_close(&symbol, &value) {
                     if lhs == 0 {
@@ -143,7 +119,6 @@ impl Map {
                 }
             }
             if lhs != 0 && rhs != 0 {
-                println!("LHS: {:?} RHS: {:?}", lhs, rhs);
                 sum += lhs * rhs;
             }
         }
@@ -157,10 +132,8 @@ impl Map {
         && sym.start as i32 <= cols[1]
         && sym.end as i32  >= cols[0]
         && sym.end as i32  <= cols[1] {
-            // println!("--- MATCH ---");
             return true;
         }
-        // println!("--- NO MATCH ---");
         false
     }
 
@@ -178,7 +151,6 @@ pub fn part_one(input: &str) -> Option<u32> {
         map.parse(line, offset);
         offset += 1;
     }
-    //println!("{:?}", map);
     Some(map.sum())
 }
 
@@ -194,7 +166,6 @@ pub fn part_two(input: &str) -> Option<u32> {
         map.parse(line, offset);
         offset += 1;
     }
-    println!("{:?}", map);
     Some(map.sum_gears())
 }
 
