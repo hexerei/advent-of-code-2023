@@ -73,7 +73,7 @@ fn get_pairs(points: &Vec<(usize, usize)>) -> Vec<usize> {
                 None
             } else {
                 matched.insert((i.min(j), j.max(i)));
-                Some(((p1.0 as i32 - p2.0 as i32).abs() + (p1.1 as i32 - p2.1 as i32).abs()) as usize)
+                Some(p1.0.abs_diff(p2.0) + p1.1.abs_diff(p2.1))
             }
         ).collect::<Vec<_>>()
     ).collect::<Vec<_>>().concat()
