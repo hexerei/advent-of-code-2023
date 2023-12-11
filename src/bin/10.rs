@@ -68,50 +68,12 @@ fn match_neighbour(game: &Vec<Vec<Option<Segment>>>, row: i32, col: i32, dir: Di
             let (s, e) = segment.unwrap();
             if (*s == Direction::None && *e == Direction::None) // start position is joker
             || (*s == dir || *e == dir) {
-                // println!("match_neighbour ({}, {}) - {:?} = TRUE", row, col, dir);
                 return true;
             }
         }
     }
-    // println!("match_neighbour ({}, {}) - {:?} = FALSE", row, col, dir);
     false
 }
-
-fn check_segment(game: &Vec<Vec<Option<Segment>>>, row: usize, col: usize) -> bool {
-    let segment = game[row][col].as_ref();
-    if segment.is_some() {
-        let (s, e) = segment.unwrap();
-        let (sr, sc) = s.offset();
-        if !match_neighbour(game, row as i32 + sr, col as i32 + sc, s.opposite()) {
-            return false;
-        }
-        let (er, ec) = e.offset();
-        if !match_neighbour(game, row as i32 + er, col as i32 + ec, e.opposite()) {
-            return false;
-        }
-    }
-    true
-}
-
-fn fix_pipe(game: &mut Vec<Vec<Option<Segment>>>) -> (usize, usize) {
-    let mut start: (usize, usize) = (0, 0);
-    for row in 0..game.len() {
-        for col in 0..game[row].len() {
-            if game[row][col].is_some() {
-                let (s, e) = game[row][col].as_ref().unwrap();
-                // start position
-                if *s == Direction::None && *e == Direction::None {
-                    start = (row, col);
-                    continue;
-                }
-                if !check_segment(game, row, col) {
-                    game[row][col] = None;
-                }
-            }
-        }
-    }
-    start
- }
 
  fn map_pipe(game: &Vec<Vec<Option<Segment>>>, poly: &Vec<(usize, usize)>) -> Vec<Vec<Option<Segment>>> {
     let mut new_game: Vec<Vec<Option<Segment>>> = vec![
@@ -153,36 +115,6 @@ fn fix_start(game: &Vec<Vec<Option<Segment>>>, row: usize, col: usize) -> (Direc
         }
     }
     start
-}
-
-fn print_game(game: &Vec<Vec<Option<Segment>>>) {
-    for row in game.iter() {
-        for segment in row.iter() {
-            match segment {
-                Some((Direction::North, Direction::South)) => print!("|"),
-                Some((Direction::West, Direction::East)) => print!("-"),
-                Some((Direction::North, Direction::East)) => print!("L"),
-                Some((Direction::North, Direction::West)) => print!("J"),
-                Some((Direction::West, Direction::South)) => print!("7"),
-                Some((Direction::East, Direction::South)) => print!("F"),
-                Some((Direction::North, Direction::North)) => print!("S"),
-                None => print!("."),
-                _ => panic!("invalid segment"),
-            }
-        }
-        println!();
-    }
-}
-
-fn print_pipe(points: &Vec<(usize, usize)>) {
-    let max_row = points.iter().fold(0, |acc, &(row, _)| acc.max(row));
-    let max_col = points.iter().fold(0, |acc, &(_, col)| acc.max(col));
-    for row in 0..max_row + 1 {
-        for col in 0..max_col + 1 {
-            print!("{}", if points.contains(&(row, col)) { '#' } else { '.' });
-        }
-        println!();
-    }
 }
 
 fn walk_pipe(game: &Vec<Vec<Option<Segment>>>, start: (usize, usize)) -> (usize, Vec<(usize, usize)>) {
@@ -234,7 +166,6 @@ pub fn part_two(input: &str) -> Option<u32> {
     game[row][col] = Some(fix_start(&game, row, col));
     let (_, poly) = walk_pipe(&game, (row, col));
     let game = map_pipe(&game, &poly);
-    //print_game(&game);
     let checked = game.iter().enumerate().map(|(row, line)|
         line.iter().enumerate().filter_map(|(col, segment)|
             match segment {
@@ -243,7 +174,6 @@ pub fn part_two(input: &str) -> Option<u32> {
             }
         ).collect::<Vec<_>>()
     ).flatten().collect::<Vec<_>>();
-    //åprintln!("{:?}\n{:?}", poly, checked);
     Some(checked.len() as u32)
 }
 
