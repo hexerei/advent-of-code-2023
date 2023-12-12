@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 advent_of_code::solution!(11);
 
+
 fn parse_game(input: &str) -> Vec<Vec<u8>> {
     input.lines().map(|line| {
         line.chars().map(|c| {
@@ -14,55 +15,25 @@ fn parse_game(input: &str) -> Vec<Vec<u8>> {
 }
 
 fn expand(game: Vec<Vec<u8>>, steps: usize) -> Vec<(usize, usize)> {
-    // collect columns to expand
-    let mut expand_cols = Vec::new();
-    let width = game[0].len();
-    for col in 0..width {
-        if game.iter().map(|row|
-            *row.iter().nth(col).unwrap()
-        ).collect::<Vec<_>>().iter().sum::<u8>() == 0 {
-            expand_cols.push(col);
-        }
-    }
-    let mut expand_rows = Vec::new();
-    for row in 0..game.len() {
-        if game[row].iter().sum::<u8>() == 0 {
-            expand_rows.push(row);
-        }
-    }
+    let step = steps - 1;
 
-    let points = game.iter().enumerate().map(|(row, line)|
-        line.iter().enumerate().filter_map(|(col, &cell)|
-            if cell == 1 {
-                Some((row, col))
-            } else {
-                None
-            }
+    let mut points = game.iter().enumerate().map(|(row, line)|
+        line.iter().enumerate().filter_map(|(col, &c)|
+            if c == 1 { Some((row, col)) } else { None }
         ).collect::<Vec<_>>()
     ).collect::<Vec<_>>().concat();
 
-    let mut new_game = points.clone();
-    let step = steps - 1;
-    // let mut col_step = steps;
-    // let mut row_step = steps;
-    //let t = expand_cols.iter().map(|&c| c).collect::<Vec<_>>();
-    for (i, &(row, col)) in points.iter().enumerate() {
-        let (mut nrow, mut ncol) = (row, col);
-        for c in expand_cols.iter() {
-            if *c < col {
-                ncol += step;
-                //col_step += steps;
-            }
+    for r in (0..game.len()).filter(|&r| game[r].iter().all(|&c| c == 0)).rev() {
+        for g in &mut points {
+            if g.0 > r { g.0 += step }
         }
-        for r in expand_rows.iter() {
-            if *r < row {
-                nrow += step;
-                //row_step += steps;
-            }
-        }
-        new_game[i] = (nrow, ncol);
     }
-    new_game
+    for c in (0..game[0].len()).filter(|&c| (0..game.len()).all(|r| game[r][c] == 0)).rev() {
+        for g in &mut points {
+            if g.1 > c { g.1 += step }
+        }
+    }
+    points
 }
 
 fn get_pairs(points: &Vec<(usize, usize)>) -> Vec<usize> {
