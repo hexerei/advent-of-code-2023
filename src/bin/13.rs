@@ -5,28 +5,26 @@ fn get_hv_maps(map: &Vec<String>) -> (Vec<isize>, Vec<isize>) {
         isize::from_str_radix(row, 2).unwrap()
     }).collect::<Vec<_>>();
     let v_map = (0..map[0].len()).map(|i| {
-        let mut v = 0;
-        for j in 0..map.len() {
-            v <<= 1;
-            if map[j].chars().nth(i).unwrap() == '1' {
-                v |= 1;
-            }
-        }
-        v
+        isize::from_str_radix(map.iter().map(|row| {
+            row.chars().nth(i).unwrap()
+        }).collect::<String>().as_str(), 2).unwrap()
     }).collect::<Vec<_>>();
     (h_map, v_map)
 }
 
+
+
 fn compare(a: isize, b: isize, part2: bool) -> bool {
     if a == b { return true; }
     else if part2 {
-        let mask = a ^ b;
-        return mask.count_ones() == 1;
+        // let mask = a ^ b;
+        // return mask.count_ones() < 2;
+        return (a ^ b).count_ones() < 2;
     }
     false
 }
 
-fn get_mirror_pos(map: &Vec<isize>, part2: bool) -> usize {
+fn get_mirror_pos(map: Vec<isize>, part2: bool) -> usize {
     // let mut pos = 0;
     // for i in 1..map.len() {
     //     if map[i] == map[i-1] {
@@ -72,76 +70,126 @@ fn get_mirror_pos(map: &Vec<isize>, part2: bool) -> usize {
     //     0
     // }
 }
-fn eval_hv_maps(h_map: &Vec<isize>, v_map: &Vec<isize>, part2: bool) -> usize {
-    let h = get_mirror_pos(h_map, part2);
-    if h > 0 {
-        let width = format!("{:b}", h_map.iter().max().unwrap()).len();
-        for i in 0..h_map.len() {
-            if i > 0  {
-                println!("{:0width$b} ^ {:0width$b}", h_map[i], h_map[i] ^ h_map[i-1]);
-            } else {
-                println!("{:0width$b}", h_map[i]);
-            }
+
+fn eval(input: &str, part2: bool) -> usize {
+    let maps = input.split("\n\n").map(|map| {
+        map.lines().map(|line| {
+            line.chars().map(|c| { match c { '#' => '1', _ => '0' }}).collect::<String>()
+        }).collect::<Vec<_>>()
+    }).collect::<Vec<_>>();
+    maps.iter().map(|map| {
+        let h = get_mirror_pos(map.iter().map(|row| {
+            isize::from_str_radix(row, 2).unwrap()
+        }).collect::<Vec<_>>(), part2);
+        if h > 0 { return h * 100; }
+        get_mirror_pos((0..map[0].len()).map(|i| {
+            isize::from_str_radix(map.iter().map(|row| {
+                row.chars().nth(i).unwrap()
+            }).collect::<String>().as_str(), 2).unwrap()
+        }).collect::<Vec<_>>(), part2)
+    }).collect::<Vec<_>>().iter().sum()
+}
+
+fn eval_maps(input: &str, part2: bool) -> usize {
+    let maps = input.split("\n\n").map(|map| {
+        map.lines().map(|line| {
+            line.chars().map(|c| { match c { '#' => '1', _ => '0' }}).collect::<String>()
+        }).collect::<Vec<_>>()
+    }).collect::<Vec<_>>();
+    maps.iter().map(|map| {
+        let h_map = map.iter().map(|row| {
+            isize::from_str_radix(row, 2).unwrap()
+        }).collect::<Vec<_>>();
+        let h = get_mirror_pos(h_map, part2);
+        if h > 0 {
+            return h * 100;
         }
-        return h * 100;
+        let v_map = (0..map[0].len()).map(|i| {
+            isize::from_str_radix(map.iter().map(|row| {
+                row.chars().nth(i).unwrap()
+            }).collect::<String>().as_str(), 2).unwrap()
+        }).collect::<Vec<_>>();
+        get_mirror_pos(v_map, part2)
+    }).collect::<Vec<_>>().iter().sum()
+}
+fn debug_map(map: &Vec<isize>) {
+    let width = format!("{:b}", map.iter().max().unwrap()).len();
+    for i in 0..map.len() {
+        if i > 0  {
+            println!("{:0width$b} ^ {:0width$b}", map[i], map[i] ^ map[i-1]);
+        } else {
+            println!("{:0width$b}", map[i]);
+        }
     }
-    let v = get_mirror_pos(v_map, part2);
+    println!("{}", "-".repeat(width));
+}
+fn eval_hv_maps(h_map: &Vec<isize>, v_map: &Vec<isize>, part2: bool) -> usize {
+    //let mut sum = 0;
+    let h = get_mirror_pos(h_map.clone(), part2);
+    if h > 0 {
+        // let width = format!("{:b}", h_map.iter().max().unwrap()).len();
+        // for i in 0..h_map.len() {
+        //     if i > 0  {
+        //         if i == h {
+        //             println!("{}", ".".repeat(width));
+        //         }
+        //         println!("{:0width$b} ^ {:0width$b}", h_map[i], h_map[i] ^ h_map[i-1]);
+        //     } else {
+        //         println!("{:0width$b}", h_map[i]);
+        //     }
+        // }
+        // println!("{}\n{}\n{}", "-".repeat(width), h * 100, "=".repeat(width));
+        return h * 100;
+        //sum += h * 100;
+    }
+    let width = format!("{:b}", h_map.iter().max().unwrap()).len();
+    for i in 0..h_map.len() {
+        if i > 0  {
+            if i == h {
+                println!("{}", ".".repeat(width));
+            }
+            println!("{:0width$b} ^ {:0width$b}", h_map[i], h_map[i] ^ h_map[i-1]);
+        } else {
+            println!("{:0width$b}", h_map[i]);
+        }
+    }
+    println!("{}", "-".repeat(width));
+    let v = get_mirror_pos(v_map.clone(), part2);
     if v > 0 {
         let width = format!("{:b}", v_map.iter().max().unwrap()).len();
         for i in 0..v_map.len() {
             if i > 0  {
+                if i == v {
+                    println!("{}", ".".repeat(width));
+                }
                 println!("{:0width$b} ^ {:0width$b}", v_map[i], v_map[i] ^ v_map[i-1]);
             } else {
                 println!("{:0width$b}", v_map[i]);
             }
         }
+        println!("{}\n{}\n{}", "-".repeat(width), v, "=".repeat(width));
+    } else {
+        println!("*** ZERO *** ZERO *** ZERO *** ZERO *** ZERO *** ZERO {} {}", h, v);
     }
-    //println!("{} {}", h, v);
+    //sum + v
     v
 }
 
 fn parse_game(input: &str) -> Vec<Vec<String>> {
-    let mut maps = Vec::new();
-    let mut map = Vec::new();
-    input.lines().for_each(|line| {
-        if line.is_empty() {
-            maps.push(map.clone());
-            map = Vec::new();
-        } else {
-            map.push(line.chars().map(|c| { match c { '#' => '1', _ => '0' }}).collect::<String>());
-        }
-    });
-    if map.len() > 0 { maps.push(map); }
+    let maps = input.split("\n\n").map(|map| {
+        map.lines().map(|line| {
+            line.chars().map(|c| { match c { '#' => '1', _ => '0' }}).collect::<String>()
+        }).collect::<Vec<_>>()
+    }).collect::<Vec<_>>();
     maps
 }
 
 pub fn part_one(input: &str) -> Option<usize> {
-    let maps = parse_game(input);
-    Some(maps.iter().map(|map| {
-        let (h_map, v_map) = get_hv_maps(map);
-        eval_hv_maps(&h_map, &v_map, false)
-    }).collect::<Vec<_>>().iter().sum())
+    Some(eval_maps(input, false))
 }
 
 pub fn part_two(input: &str) -> Option<usize> {
-    let maps = parse_game(input);
-    let sum: usize = maps.iter().map(|map| {
-        let (h_map, v_map) = get_hv_maps(map);
-        let (row, col) = (map.len(), map[0].len());
-        for row in map {
-            println!("{}", row);
-        }
-        println!("{}", "-".repeat(16));
-        let score = eval_hv_maps(&h_map, &v_map, true);
-        println!("{}", "-".repeat(16));
-        let h_mirror = get_mirror_pos(&h_map, true);
-        let v_mirror = get_mirror_pos(&v_map, true);
-        println!("{} {}", h_mirror, v_mirror);
-        println!("{}", "=".repeat(16));
-        score
-    }).collect::<Vec<_>>().iter().sum();
-    println!("RESULT {}", sum);
-    Some(sum)
+    Some(eval_maps(input, true))
 }
 
 #[cfg(test)]
@@ -157,6 +205,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(400));
     }
 }
