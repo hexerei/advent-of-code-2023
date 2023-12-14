@@ -4,12 +4,12 @@ struct Game {
     map: Vec<Vec<u8>>,
     orientation: usize,
     //row: usize,
-    col: usize,
+    rows: usize,
     cycle: usize,
     unique: usize,
     distinct: usize,
     step: usize,
-    results: Vec<usize>,
+    cache: Vec<usize>,
 }
 impl Game {
 
@@ -23,29 +23,26 @@ impl Game {
                 }
             }).collect::<Vec<_>>()
         }).collect::<Vec<_>>();
-        let (row, col) = (map.len(), map[0].len());
+        let rows = map.len();
         Game {
             map: map,
             orientation: 3,
-            //row,
-            col,
+            rows,
             cycle: 0,
-            unique: if row == 10 { 2 } else { 153 },
-            distinct: if row == 10 { 9 } else { 179 },
-            step: if row == 10 { 7 } else { 26 },
-            results: Vec::new(),
+            unique: if rows == 10 { 2 } else { 153 },
+            distinct: if rows == 10 { 9 } else { 179 },
+            step: if rows == 10 { 7 } else { 26 },
+            cache: Vec::new(),
         }
     }
 
-    fn flip(&self) -> Vec<Vec<u8>> {
-        (0..self.col).map(|i| {
+    fn rotate(&mut self) {
+        self.orientation = (self.orientation + 1) % 4;
+        self.map = (0..self.rows).map(|i| {
             self.map.iter().rev().map(|row| {
                 *row.iter().nth(i).unwrap() as u8
             }).collect::<Vec<_>>()
-        }).collect::<Vec<_>>()
-    }
-
-    fn gravity(&mut self) {
+        }).collect::<Vec<_>>();
         for row in self.map.iter_mut() {
             let mut i = row.len() - 1;
             let mut swapped: bool = false;
@@ -65,30 +62,6 @@ impl Game {
         }
     }
 
-    fn rotate(&mut self) {
-        self.orientation = (self.orientation + 1) % 4;
-        self.map = self.flip();
-        self.gravity();
-    }
-
-    // fn score_map(&self, map: &Vec<Vec<u8>>) -> usize {
-    //     map.iter().map(|row| {
-    //         row.iter().enumerate().filter_map(|(i, &c)| {
-    //             if c == 1 { Some(i + 1) }
-    //             else { None }
-    //         }).collect::<Vec<_>>().iter().sum::<usize>()
-    //     }).collect::<Vec<_>>().iter().sum::<usize>()
-    // }
-
-    fn score_map(&self, map: &Vec<Vec<u8>>) -> usize {
-        map.iter().enumerate().map(|(i, row)| {
-            row.iter().filter_map(|&c| {
-                if c == 1 { Some(map.len() - i) }
-                else { None }
-            }).collect::<Vec<_>>().iter().sum::<usize>()
-        }).collect::<Vec<_>>().iter().sum::<usize>()
-    }
-
     fn score(&mut self) -> usize {
         self.map.iter().map(|row| {
             row.iter().enumerate().filter_map(|(i, &c)| {
@@ -96,38 +69,36 @@ impl Game {
                 else { None }
             }).collect::<Vec<_>>().iter().sum::<usize>()
         }).collect::<Vec<_>>().iter().sum::<usize>()
-       // self.score_map(self.map.as_ref())
     }
 
     fn score_north(&mut self) -> usize {
-        //let map = self.flip();
-        //self.print_map(&map, NORTH);
-        // self.score_map(&map)
-        self.score_map(&self.map)
+        self.map.iter().enumerate().map(|(i, row)| {
+            row.iter().filter_map(|&c| {
+                if c == 1 { Some(self.rows - i) }
+                else { None }
+            }).collect::<Vec<_>>().iter().sum::<usize>()
+        }).collect::<Vec<_>>().iter().sum::<usize>()
     }
 
-    // fn print_map(&self, map: &Vec<Vec<u8>>, orientation: usize) {
-    //     println!("{} {}","-".repeat(40), match orientation {
-    //         0 => "NORTH",
-    //         1 => "WEST",
-    //         2 => "SOUTH",
-    //         3 => "EAST",
-    //         _ => "?",
-    //     });
-    //     for row in map {
-    //         println!("{}", row.iter().map(|&c|
-    //             match c {
-    //                 2 => '#',
-    //                 1 => 'O',
-    //                 _ => '.',
-    //             }
-    //         ).collect::<String>());
-    //     }
-    // }
-
-    // fn print(&self) {
-    //     self.print_map(&self.map, self.orientation);
-    // }
+    #[allow(dead_code)]
+    fn print(&self) {
+        println!("{} {}","-".repeat(40), match self.orientation {
+            0 => "NORTH",
+            1 => "WEST",
+            2 => "SOUTH",
+            3 => "EAST",
+            _ => "?",
+        });
+        for row in self.map.iter() {
+            println!("{}", row.iter().map(|&c|
+                match c {
+                    2 => '#',
+                    1 => 'O',
+                    _ => '.',
+                }
+            ).collect::<String>());
+        }
+    }
 
     fn cycle(&mut self) {
         (0..4).for_each(|_| {
@@ -135,29 +106,24 @@ impl Game {
         });
         //self.print();
         let score = self.score_north();
-        self.results.push(score);
+        self.cache.push(score);
         self.cycle += 1;
     }
 
     fn run(&mut self, cycles: usize) -> usize {
         if cycles == 0 {
             self.rotate();
-            //self.print();
             return self.score();
         }
         let m = if cycles < self.distinct {cycles} else {self.distinct};
-        (0..m).for_each(|_| {
-            //println!("------  {}", self.cycle);
-            self.cycle();
-            //self.print();
-        });
-        //println!("{:?}", self.results);
+        (0..m).for_each(|_| { self.cycle(); });
+        //println!("{:?}", self.cache);
         let mut off = cycles - 1;
         if off >= self.distinct {
             off = ((off-self.distinct) % self.step) + self.unique;
         }
-        //println!("> results[{}] = {:?}", off, self.results[off]);
-        self.results[off]
+        //println!("> cache[{}] = {:?}", off, self.cache[off]);
+        self.cache[off]
     }
 }
 
