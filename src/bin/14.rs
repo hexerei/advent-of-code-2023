@@ -3,7 +3,7 @@ advent_of_code::solution!(14);
 struct Game {
     map: Vec<Vec<u8>>,
     orientation: usize,
-    row: usize,
+    //row: usize,
     col: usize,
     cycle: usize,
     unique: usize,
@@ -27,7 +27,7 @@ impl Game {
         Game {
             map: map,
             orientation: 3,
-            row,
+            //row,
             col,
             cycle: 0,
             unique: if row == 10 { 2 } else { 153 },
@@ -106,28 +106,28 @@ impl Game {
         self.score_map(&self.map)
     }
 
-    fn print_map(&self, map: &Vec<Vec<u8>>, orientation: usize) {
-        println!("{} {}","-".repeat(40), match orientation {
-            0 => "NORTH",
-            1 => "WEST",
-            2 => "SOUTH",
-            3 => "EAST",
-            _ => "?",
-        });
-        for row in map {
-            println!("{}", row.iter().map(|&c|
-                match c {
-                    2 => '#',
-                    1 => 'O',
-                    _ => '.',
-                }
-            ).collect::<String>());
-        }
-    }
+    // fn print_map(&self, map: &Vec<Vec<u8>>, orientation: usize) {
+    //     println!("{} {}","-".repeat(40), match orientation {
+    //         0 => "NORTH",
+    //         1 => "WEST",
+    //         2 => "SOUTH",
+    //         3 => "EAST",
+    //         _ => "?",
+    //     });
+    //     for row in map {
+    //         println!("{}", row.iter().map(|&c|
+    //             match c {
+    //                 2 => '#',
+    //                 1 => 'O',
+    //                 _ => '.',
+    //             }
+    //         ).collect::<String>());
+    //     }
+    // }
 
-    fn print(&self) {
-        self.print_map(&self.map, self.orientation);
-    }
+    // fn print(&self) {
+    //     self.print_map(&self.map, self.orientation);
+    // }
 
     fn cycle(&mut self) {
         (0..4).for_each(|_| {
@@ -151,16 +151,13 @@ impl Game {
             self.cycle();
             //self.print();
         });
-        println!("{:?}", self.results);
-        let off = cycles - 1;
-        if off < self.distinct {
-            println!("< results[{}] = {:?}", off, self.results[off]);
-            self.results[off]
-        } else {
-            let off = ((off-self.distinct) % self.step) + self.unique;
-            println!("> results[{}] = {:?}", off, self.results[off]);
-            self.results[off]
+        //println!("{:?}", self.results);
+        let mut off = cycles - 1;
+        if off >= self.distinct {
+            off = ((off-self.distinct) % self.step) + self.unique;
         }
+        //println!("> results[{}] = {:?}", off, self.results[off]);
+        self.results[off]
     }
 }
 
