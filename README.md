@@ -50,6 +50,9 @@ Solutions for [Advent of Code](https://adventofcode.com/) in [Rust](https://www.
 **Total: 1479.98ms**
 <!--- benchmarking table --->
 
+> [!NOTE]
+> All benchmarks are run on a macbook pro (mid 2015) with 2,5 GHz quad-core Intel Core i7 and 16 GB RAM.
+
 ---
 
 ## Usage
