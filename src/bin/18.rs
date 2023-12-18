@@ -22,7 +22,7 @@ fn normalize_poly(poly: &Vec<(isize, isize)>) -> Vec<(isize, isize)> {
 fn parse_poly(input: &str, all: bool) -> Vec<(isize, isize)> {
     let poly = input
         .lines()
-        .fold(Vec::new(), |mut acc, line| {
+        .fold(vec![(0,0)], |mut acc, line| {
             let dig = line.split_whitespace().collect::<Vec<_>>();
             let dug = *acc.last().unwrap_or(&(0, 0));
             if dig.len() > 1 {
@@ -31,33 +31,31 @@ fn parse_poly(input: &str, all: bool) -> Vec<(isize, isize)> {
                 if all {
                     // all points
                     match dig[0] {
-                        "U" => (0..=l).for_each(|i| if !acc.contains(&(x,y+i)) {acc.push((x, y + i))}),
-                        "D" => (0..=l).for_each(|i| if !acc.contains(&(x,y-i)) {acc.push((x, y - i))}),
-                        "L" => (0..=l).for_each(|i| if !acc.contains(&(x-i,y)) {acc.push((x - i, y))}),
-                        "R" => (0..=l).for_each(|i| if !acc.contains(&(x+i,y)) {acc.push((x + i, y))}),
+                        "U" => (0..=l).for_each(|i| acc.push((x, y + i))),
+                        "D" => (0..=l).for_each(|i| acc.push((x, y - i))),
+                        "L" => (0..=l).for_each(|i| acc.push((x - i, y))),
+                        "R" => (0..=l).for_each(|i| acc.push((x + i, y))),
                         _ => unreachable!(),
                     }
                 } else {
                 // only endpoints
                     match dig[0] {
-                        "U" if !acc.contains(&(x,y+l)) => acc.push((x,y+l)),
-                        "D" if !acc.contains(&(x,y-l)) => acc.push((x,y-l)),
-                        "L" if !acc.contains(&(x-l,y)) => acc.push((x-l,y)),
-                        "R" if !acc.contains(&(x+l,y)) => acc.push((x+l,y)),
-                        _ => unreachable!()
+                        "U" => acc.push((x,y+l)),
+                        "D" => acc.push((x,y-l)),
+                        "L" => acc.push((x-l,y)),
+                        "R" => acc.push((x+l,y)),
+                        _ => ()
                     }
                 }
             }
-            acc.dedup();
             acc
         });
         normalize_poly(&poly)
 }
 
-fn parse_poly2(input: &str, all: bool) -> Vec<(isize, isize)> {
-    let poly = input
-        .lines()
-        .fold(Vec::new(), |mut acc, line| {
+fn parse_poly2(input: &str) -> Vec<(isize, isize)> {
+    let poly = input.lines()
+        .fold(vec![(0,0)], |mut acc, line| {
             let (_, hex) = line.split_once("#").unwrap();
             let (hex, _) = hex.split_once(")").unwrap();
             let mut chars = hex.chars();
@@ -77,28 +75,17 @@ fn parse_poly2(input: &str, all: bool) -> Vec<(isize, isize)> {
                 _ => unreachable!()
             }, l);
             let (x, y) = *acc.last().unwrap_or(&(0, 0));
-            if all {
-                // all points
-                match direction {
-                    3 => (0..=l).for_each(|i| if !acc.contains(&(x,y+i)) {acc.push((x, y + i))}),
-                    1 => (0..=l).for_each(|i| if !acc.contains(&(x,y-i)) {acc.push((x, y - i))}),
-                    2 => (0..=l).for_each(|i| if !acc.contains(&(x-i,y)) {acc.push((x - i, y))}),
-                    0 => (0..=l).for_each(|i| if !acc.contains(&(x+i,y)) {acc.push((x + i, y))}),
-                    _ => unreachable!(),
-                }
-            } else {
             // only endpoints
-                match direction {
-                    3 if !acc.contains(&(x,y+l)) => acc.push((x,y+l)),
-                    1 if !acc.contains(&(x,y-l)) => acc.push((x,y-l)),
-                    2 if !acc.contains(&(x-l,y)) => acc.push((x-l,y)),
-                    0 if !acc.contains(&(x+l,y)) => acc.push((x+l,y)),
-                    _ => unreachable!()
-                }
+            match direction {
+                3 => acc.push((x,y+l)),
+                1 => acc.push((x,y-l)),
+                2 => acc.push((x-l,y)),
+                0 => acc.push((x+l,y)),
+                _ => unreachable!()
             }
             acc
         });
-        normalize_poly(&poly)
+    normalize_poly(&poly)
 }
 
 fn print_poly(poly: &Vec<(isize, isize)>) {
@@ -121,20 +108,14 @@ fn print_poly(poly: &Vec<(isize, isize)>) {
 }
 
 fn dig(poly: &Vec<(isize, isize)>) -> usize {
-    // print_poly(poly);
-    // println!("***************");
     let (min_p, max_p) = min_max_poly(poly);
     let mut count: usize = 0;
     for y in min_p.1..=max_p.1 {
         for x in min_p.0..=max_p.0 {
             if poly.contains(&(x, y)) || point_in_poly(poly, (x, y)) {
                 count += 1;
-            //     print!("#")
-            // } else {
-            //     print!(".");
             }
         }
-        //println!();
     }
     count
 }
@@ -142,10 +123,10 @@ fn dig(poly: &Vec<(isize, isize)>) -> usize {
 fn point_in_poly(poly: &Vec<(isize, isize)>, point: (isize, isize)) -> bool {
     let mut inside = false;
     let mut j = poly.len() - 1;
-    let (tx, ty) = (point.1, point.0);
+    let (tx, ty) = point; //(point.1, point.0);
     for i in 0..poly.len() {
-        let (px, py) = (poly[i].1, poly[i].0);
-        let (lpx, lpy) = (poly[j].1, poly[j].0);
+        let (px, py) = poly[i]; //(poly[i].1, poly[i].0);
+        let (lpx, lpy) = poly[j]; //(poly[j].1, poly[j].0);
         if ((py > ty) != (lpy > ty))
         && (tx < (lpx - px) * (ty - py) / (lpy - py) + px) {
             inside = !inside;
@@ -155,35 +136,103 @@ fn point_in_poly(poly: &Vec<(isize, isize)>, point: (isize, isize)) -> bool {
     inside
 }
 
-// fn points_in_poly(poly: &Vec<(i32, i32)>) -> usize {
-//     let mut inside = false;
-//     let mut j = poly.len() - 1;
-//     let mut count: usize = 0;
-//     let (tx, ty) = (point.1, point.0);
-//     for i in 0..poly.len() {
-//         let (px, py) = (poly[i].1, poly[i].0);
-//         let (lpx, lpy) = (poly[j].1, poly[j].0);
-//         if (py != lpy)
-//         && (tx < (lpx - px) * (ty - py) / (lpy - py) + px) {
-//             inside = !inside;
-//         }
-//         j = i;
-//     }
-//     count
-// }
+fn gcd2(mut a:isize, mut b:isize) -> isize{
+    if a==b { return a; }
+    if b > a { std::mem::swap(&mut a, &mut b); }
+    while b>0 {
+        let temp = a;
+        a = b;
+        b = temp%b;
+    }
+    return a;
+}
+
+fn gcd(a:isize, b:isize) -> isize {
+    if a == 0 || b == 0 { return  (a | b).abs(); }
+    // common factors of 2
+    let shift = (a | b).trailing_zeros() as isize;
+    if a == isize::MIN || b == isize::MIN {
+        return (1isize << shift).abs();
+    }
+    let (mut m, mut n) = (a.abs(), b.abs());
+    m >>= m.trailing_zeros();
+    n >>= n.trailing_zeros();
+    while m != n {
+        if m > n {
+            m -= n;
+            m >>= m.trailing_zeros();
+        } else {
+            n -= m;
+            n >>= n.trailing_zeros();
+        }
+    }
+    m << shift
+}
+
+fn downscale_poly(poly: &Vec<(isize, isize)>) -> (Vec<(isize, isize)>, isize) {
+    let (mut xs, mut ys): (Vec<isize>, Vec<isize>) = poly.iter().cloned().unzip();
+    xs.sort();
+    xs.dedup();
+    ys.sort();
+    ys.dedup();
+    ys.append(&mut xs);
+
+    let scale = ys.iter().fold(1, |acc, x| gcd(acc, *x));
+    
+    // let nums = poly.iter().map(|(x, y)|
+    //     gcd(*x, *y)
+    // ).collect::<Vec<_>>();
+    // let scale = poly.iter().map(|(x, y)|
+    //     gcd(*x, *y)
+    // ).fold(1, |acc, x| gcd(acc, x));
+    println!("scale: {}", scale);
+    let mut scaled = Vec::new();
+    for p in poly {
+        scaled.push((p.0 / scale, p.1 / scale));
+    }
+    (scaled, scale)
+}
+
+fn points_in_poly(poly: &Vec<(isize, isize)>) -> usize {
+    let mut inside = 0;
+    let mut j = poly.len() - 1;
+    for i in 0..poly.len() {
+        let (px, py) = poly[i]; //(poly[i].1, poly[i].0);
+        let (lpx, lpy) = poly[j]; //(poly[j].1, poly[j].0);
+        let dx = lpx.abs_diff(px) as isize;
+        let dy = lpy.abs_diff(py) as isize;
+        println!("({}, {}) ({}, {}) ({}) * {} / {} + {} = {}",
+            px, py, lpx, lpy, dx, py, dy, dx,
+            match dy + px {
+                0 => 0isize,
+                _ => (dx * py) / (dy + px)
+            });
+        inside += dx + dy;
+        // if ((py > ty) != (lpy > ty))
+        // && (tx < (lpx - px) * (ty - py) / (lpy - py) + px) {
+        //     inside = !inside;
+        // }
+        j = i;
+    }
+    inside as usize
+}
 
 pub fn part_one(input: &str) -> Option<usize> {
     Some(dig(&parse_poly(input, true)))
 }
 
 pub fn part_two(input: &str) -> Option<usize> {
-    let poly = parse_poly2(input, false);
+    let poly = parse_poly2(input);
     dbg!(&poly);
     let (min_p, max_p) = min_max_poly(&poly);
     println!("{:?} {:?}", min_p, max_p);
+    let (poly, scale) = downscale_poly(&poly);
+    let (min_p, max_p) = min_max_poly(&poly);
+    println!("{:?} {:?}", min_p, max_p);
+
 
     //print_poly(&p);
-    Some(0)
+    Some(points_in_poly(&poly))
 }
 
 #[cfg(test)]
