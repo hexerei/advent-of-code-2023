@@ -14,9 +14,25 @@ fn min_max_poly(poly: &Vec<(isize, isize)>) -> ((isize, isize), (isize, isize)) 
     (min_p, max_p)
 }
 
+fn fmin_max_poly(poly: &Vec<(f64, f64)>) -> ((f64, f64), (f64, f64)) {
+    let mut min_p = (f64::MAX, f64::MAX);
+    let mut max_p = (f64::MIN, f64::MIN);
+    for p in poly {
+        min_p.0 = min_p.0.min(p.0);
+        min_p.1 = min_p.1.min(p.1);
+        max_p.0 = max_p.0.max(p.0);
+        max_p.1 = max_p.1.max(p.1);
+    }
+    (min_p, max_p)
+}
+
 fn normalize_poly(poly: &Vec<(isize, isize)>) -> Vec<(isize, isize)> {
     let (min_p, _) = min_max_poly(poly);
     poly.iter().map(|p| (p.0 - min_p.0, p.1 - min_p.1)).collect()
+}
+
+fn downscale_poly(poly: &Vec<(isize, isize)>, d: isize) -> Vec<(f64, f64)> {
+    poly.iter().map(|p| (p.0 as f64 / d as f64, p.1 as f64 / d as f64)).collect()
 }
 
 fn parse_poly(input: &str, all: bool) -> Vec<(isize, isize)> {
@@ -53,7 +69,8 @@ fn parse_poly(input: &str, all: bool) -> Vec<(isize, isize)> {
         normalize_poly(&poly)
 }
 
-fn parse_poly2(input: &str) -> Vec<(isize, isize)> {
+fn parse_poly2(input: &str) -> (Vec<(isize, isize)>, isize) {
+    let mut nums: Vec<isize> = Vec::new();
     let poly = input.lines()
         .fold(vec![(0,0)], |mut acc, line| {
             let (_, hex) = line.split_once("#").unwrap();
@@ -67,6 +84,7 @@ fn parse_poly2(input: &str) -> Vec<(isize, isize)> {
                 }
             }
             let l = isize::from_str_radix(chars.as_str(), 16).unwrap();
+            nums.push(l);
             println!("{} {}", match direction {
                 0 => "R",
                 1 => "D",
@@ -85,7 +103,11 @@ fn parse_poly2(input: &str) -> Vec<(isize, isize)> {
             }
             acc
         });
-    normalize_poly(&poly)
+    let d = *nums.iter().min().unwrap_or(&1);
+    for num in nums {
+        println!("{} / {} = {}", num, d, num as f64/d as f64);
+    }
+    (normalize_poly(&poly), d)
 }
 
 fn print_poly(poly: &Vec<(isize, isize)>) {
@@ -120,7 +142,38 @@ fn dig(poly: &Vec<(isize, isize)>) -> usize {
     count
 }
 
+fn fdig(poly: &Vec<(f64, f64)>) -> usize {
+    let (min_p, max_p) = fmin_max_poly(poly);
+    let mut count: usize = 0;
+    let (xs, xe) = (min_p.0.floor() as isize, max_p.0.ceil() as isize);
+    let (ys, ye) = (min_p.1.floor() as isize, max_p.1.ceil() as isize);
+    for y in ys..=ye {
+        for x in xs..=xe {
+            if fpoint_in_poly(poly, (x as f64, y as f64)) {
+                count += 1;
+            }
+        }
+    }
+    count
+}
+
 fn point_in_poly(poly: &Vec<(isize, isize)>, point: (isize, isize)) -> bool {
+    let mut inside = false;
+    let mut j = poly.len() - 1;
+    let (tx, ty) = point; //(point.1, point.0);
+    for i in 0..poly.len() {
+        let (px, py) = poly[i]; //(poly[i].1, poly[i].0);
+        let (lpx, lpy) = poly[j]; //(poly[j].1, poly[j].0);
+        if ((py > ty) != (lpy > ty))
+        && (tx < (lpx - px) * (ty - py) / (lpy - py) + px) {
+            inside = !inside;
+        }
+        j = i;
+    }
+    inside
+}
+
+fn fpoint_in_poly(poly: &Vec<(f64, f64)>, point: (f64, f64)) -> bool {
     let mut inside = false;
     let mut j = poly.len() - 1;
     let (tx, ty) = point; //(point.1, point.0);
@@ -169,30 +222,6 @@ fn gcd(a:isize, b:isize) -> isize {
     m << shift
 }
 
-fn downscale_poly(poly: &Vec<(isize, isize)>) -> (Vec<(isize, isize)>, isize) {
-    let (mut xs, mut ys): (Vec<isize>, Vec<isize>) = poly.iter().cloned().unzip();
-    xs.sort();
-    xs.dedup();
-    ys.sort();
-    ys.dedup();
-    ys.append(&mut xs);
-
-    let scale = ys.iter().fold(1, |acc, x| gcd(acc, *x));
-    
-    // let nums = poly.iter().map(|(x, y)|
-    //     gcd(*x, *y)
-    // ).collect::<Vec<_>>();
-    // let scale = poly.iter().map(|(x, y)|
-    //     gcd(*x, *y)
-    // ).fold(1, |acc, x| gcd(acc, x));
-    println!("scale: {}", scale);
-    let mut scaled = Vec::new();
-    for p in poly {
-        scaled.push((p.0 / scale, p.1 / scale));
-    }
-    (scaled, scale)
-}
-
 fn points_in_poly(poly: &Vec<(isize, isize)>) -> usize {
     let mut inside = 0;
     let mut j = poly.len() - 1;
@@ -201,8 +230,8 @@ fn points_in_poly(poly: &Vec<(isize, isize)>) -> usize {
         let (lpx, lpy) = poly[j]; //(poly[j].1, poly[j].0);
         let dx = lpx.abs_diff(px) as isize;
         let dy = lpy.abs_diff(py) as isize;
-        println!("({}, {}) ({}, {}) ({}) * {} / {} + {} = {}",
-            px, py, lpx, lpy, dx, py, dy, dx,
+        println!("({:8}, {:8}) ({:8}, {:8}) [{:8}] ({}) * {} / {} + {} = {}",
+            px, py, lpx, lpy, dx.abs_diff(dy), dx, py, dy, dx,
             match dy + px {
                 0 => 0isize,
                 _ => (dx * py) / (dy + px)
@@ -222,17 +251,20 @@ pub fn part_one(input: &str) -> Option<usize> {
 }
 
 pub fn part_two(input: &str) -> Option<usize> {
-    let poly = parse_poly2(input);
-    dbg!(&poly);
-    let (min_p, max_p) = min_max_poly(&poly);
-    println!("{:?} {:?}", min_p, max_p);
-    let (poly, scale) = downscale_poly(&poly);
-    let (min_p, max_p) = min_max_poly(&poly);
-    println!("{:?} {:?}", min_p, max_p);
+    let (poly, d) = parse_poly2(input);
+    let poly = downscale_poly(&poly, d);
+
+    for p in &poly {
+        println!("({}, {})", p.0, p.1);
+    }
+    //dbg!(&poly);
+    // let (min_p, max_p) = min_max_poly(&poly);
+    // println!("{:?} {:?}", min_p, max_p);
 
 
-    //print_poly(&p);
-    Some(points_in_poly(&poly))
+    // //print_poly(&p);
+    Some(fdig(&poly) * d as usize)
+    //None
 }
 
 #[cfg(test)]
