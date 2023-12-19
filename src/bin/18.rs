@@ -1,4 +1,6 @@
-use std::str;
+use std::{str, collections::HashMap};
+
+use itertools::Itertools;
 
 advent_of_code::solution!(18);
 
@@ -31,11 +33,11 @@ fn normalize_poly(poly: &Vec<(isize, isize)>) -> Vec<(isize, isize)> {
     poly.iter().map(|p| (p.0 - min_p.0, p.1 - min_p.1)).collect()
 }
 
-fn downscale_poly(poly: &Vec<(isize, isize)>, d: isize) -> Vec<(f64, f64)> {
-    poly.iter().map(|p| (p.0 as f64 / d as f64, p.1 as f64 / d as f64)).collect()
+fn downscale_poly(poly: &Vec<(isize, isize)>, d: isize) -> Vec<(isize, isize)> {
+    poly.iter().map(|p| (p.0 / d, p.1 / d)).collect()
 }
 
-fn parse_poly(input: &str, all: bool) -> Vec<(isize, isize)> {
+fn parse_poly(input: &str) -> Vec<(isize, isize)> {
     let poly = input
         .lines()
         .fold(vec![(0,0)], |mut acc, line| {
@@ -44,29 +46,18 @@ fn parse_poly(input: &str, all: bool) -> Vec<(isize, isize)> {
             if dig.len() > 1 {
                 let l = dig[1].parse::<isize>().unwrap();
                 let (x, y) = (dug.0, dug.1);
-                if all {
-                    // all points
-                    match dig[0] {
-                        "U" => (0..=l).for_each(|i| acc.push((x, y + i))),
-                        "D" => (0..=l).for_each(|i| acc.push((x, y - i))),
-                        "L" => (0..=l).for_each(|i| acc.push((x - i, y))),
-                        "R" => (0..=l).for_each(|i| acc.push((x + i, y))),
-                        _ => unreachable!(),
-                    }
-                } else {
-                // only endpoints
-                    match dig[0] {
-                        "U" => acc.push((x,y+l)),
-                        "D" => acc.push((x,y-l)),
-                        "L" => acc.push((x-l,y)),
-                        "R" => acc.push((x+l,y)),
-                        _ => ()
-                    }
+                // all points
+                match dig[0] {
+                    "U" => (0..=l).for_each(|i| acc.push((x, y + i))),
+                    "D" => (0..=l).for_each(|i| acc.push((x, y - i))),
+                    "L" => (0..=l).for_each(|i| acc.push((x - i, y))),
+                    "R" => (0..=l).for_each(|i| acc.push((x + i, y))),
+                    _ => unreachable!(),
                 }
             }
             acc
         });
-        normalize_poly(&poly)
+    normalize_poly(&poly)
 }
 
 fn parse_poly2(input: &str) -> (Vec<(isize, isize)>, isize) {
@@ -85,13 +76,13 @@ fn parse_poly2(input: &str) -> (Vec<(isize, isize)>, isize) {
             }
             let l = isize::from_str_radix(chars.as_str(), 16).unwrap();
             nums.push(l);
-            println!("{} {}", match direction {
-                0 => "R",
-                1 => "D",
-                2 => "L",
-                3 => "U",
-                _ => unreachable!()
-            }, l);
+            // println!("{} {}", match direction {
+            //     0 => "R",
+            //     1 => "D",
+            //     2 => "L",
+            //     3 => "U",
+            //     _ => unreachable!()
+            // }, l);
             let (x, y) = *acc.last().unwrap_or(&(0, 0));
             // only endpoints
             match direction {
@@ -104,9 +95,9 @@ fn parse_poly2(input: &str) -> (Vec<(isize, isize)>, isize) {
             acc
         });
     let d = *nums.iter().min().unwrap_or(&1);
-    for num in nums {
-        println!("{} / {} = {}", num, d, num as f64/d as f64);
-    }
+    // for num in nums {
+    //     println!("{} / {} = {}", num, d, num as f64/d as f64);
+    // }
     (normalize_poly(&poly), d)
 }
 
@@ -122,6 +113,67 @@ fn print_poly(poly: &Vec<(isize, isize)>) {
             if poly.contains(&(x, y)) {
                 print!("#")
             } else {
+                print!(".");
+            }
+        }
+        println!();
+    }
+}
+
+fn fill_poly(poly: &Vec<(isize, isize)>) {
+    println!("*************** {}", poly.len());
+    let mut poly = poly.clone();
+    poly.sort_by(|&a, &b| a.1.cmp(&b.1));
+
+    let mut cx = HashMap::new();
+    cx.insert(0isize, Vec::<isize>::new());
+
+    let mut cy = HashMap::new();
+    cy.insert(0isize, Vec::<isize>::new());
+
+    for p in poly.iter() {
+        println!("({}, {})", p.0, p.1);
+        let mut v = cy.get(&p.1).unwrap_or(&Vec::new()).clone();
+        if !v.contains(&p.0) { v.push(p.0) };
+        v.sort();
+        cy.insert(p.1, v);
+        let mut v = cx.get(&p.0).unwrap_or(&Vec::new()).clone();
+        if !v.contains(&p.1) { v.push(p.1) };
+        v.sort();
+        cx.insert(p.0, v);
+    }
+    println!("*************** {} {}", cx.len(), cy.len());
+    let cxkeys = cx.keys().sorted().collect::<Vec<_>>();
+    //cxkeys.sort();
+    let cykeys = cy.keys().sorted().collect::<Vec<_>>();
+    //cykeys.sort();
+
+    for y in cykeys {
+        let v = cy.get(y).unwrap();
+        let mut inside = false;
+        let mut last_x = 0isize;
+        println!("{}: {:?}", y, v);
+        for x in v {
+            if inside {
+                print!("{}", "#".repeat((*x - last_x) as usize));
+            } else {
+                print!("{}", ".".repeat((*x - last_x) as usize));
+            }
+            inside = !inside;
+            last_x = *x;
+        }
+        println!();
+    }
+
+    println!("*************** {}", poly.len());
+    //let mut inside = false;
+    let (min_p, max_p) = min_max_poly(&poly);
+    for y in min_p.1..=max_p.1 {
+        for x in min_p.0..=max_p.0 {
+            if poly.contains(&(x, y)) {
+                print!("#")
+            } else {
+                
                 print!(".");
             }
         }
@@ -247,12 +299,13 @@ fn points_in_poly(poly: &Vec<(isize, isize)>) -> usize {
 }
 
 pub fn part_one(input: &str) -> Option<usize> {
-    Some(dig(&parse_poly(input, true)))
+    Some(dig(&parse_poly(input)))
 }
 
 pub fn part_two(input: &str) -> Option<usize> {
     let (poly, d) = parse_poly2(input);
-    let poly = downscale_poly(&poly, d);
+    let ppoly = downscale_poly(&poly, d);
+    fill_poly(&ppoly);
 
     for p in &poly {
         println!("({}, {})", p.0, p.1);
@@ -263,8 +316,8 @@ pub fn part_two(input: &str) -> Option<usize> {
 
 
     // //print_poly(&p);
-    Some(fdig(&poly) * d as usize)
-    //None
+    //Some(fdig(&poly) * d as usize)
+    None
 }
 
 #[cfg(test)]
