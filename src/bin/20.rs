@@ -1,9 +1,14 @@
+// 523190878 <- too low - lo: 11951, hi: 43778
+// 580340560 <- too low - lo: 11951, hi: 48560
+
 use std::collections::HashMap;
 use std::fmt;
 
 advent_of_code::solution!(20);
 
 const VERBOSE: bool = true;
+const TEST: bool = false;
+const REPEAT: u64 = 1000;
 
 struct Mapper {
     module: u64,
@@ -90,16 +95,18 @@ impl Modules {
     fn push(&mut self, times: u64) -> (u64, u64) {
         let mut lo_total = 0;
         let mut hi_total = 0;
-        let n = 64 - self.broadcaster.leading_zeros();
+        //let n = 64 - self.broadcaster.leading_zeros();
         for _ in 0..times {
             if VERBOSE {println!("=== PUSH =====================")};
             lo_total += 1; // button signal
-            for i in 0..n {
-                let m = 1 << i;
-                if self.broadcaster & m != 0 {
-                    self.lo |= m;
-                }
-            }
+            self.lo |= self.broadcaster;
+            lo_total += self.broadcaster.count_ones() as u64;
+            // for i in 0..n {
+            //     let m = 1 << i;
+            //     if self.broadcaster & m != 0 {
+            //         self.lo |= m;
+            //     }
+            // }
             loop {
                 let (losig, hisig)  = self.process();
                 if losig + hisig == 0 {
@@ -122,6 +129,8 @@ impl Modules {
         let (lo, hi) = (self.lo, self.hi);
         (self.lo, self.hi) = (0, 0);
         let mut conjunctions = Vec::new();
+        let mut count_lo = 0;
+        let mut count_hi = 0;
         let n = 64 - lo.leading_zeros();
         for i in 0..n {
             let m = 1 << i;
@@ -134,30 +143,47 @@ impl Modules {
                     if let Some(out) = self.outputs.get(&m) {
                         if self.config & m != 0 {
                             self.config &= !m;
+                            // let p = 64 - out.leading_zeros();
+                            // for i in 0..p {
+                            //     let n = 1 << i;
+                            //     if out & n != 0 {
+                            //         self.lo |= out;
+                            //     }
+                            // }
                             self.lo |= out;
+                            count_lo += out.count_ones();
                         } else {
                             self.config |= m;
+                            // let p = 64 - out.leading_zeros();
+                            // for i in 0..p {
+                            //     let n = 1 << i;
+                            //     if out & n != 0 {
+                            //         self.hi |= out;
+                            //     }
+                            // }
                             self.hi |= out;
+                            count_hi += out.count_ones();
                         }
                     }
                 }
             }
         }
-        // for m in conjunctions {
-        //     let &out = self.outputs.get(&m).unwrap();
-        //     let &inp = self.inputs.get(&m).unwrap();
-        //     let p = 64 - inp.leading_zeros();
-        //     for i in 0..p {
-        //         let n = 1 << i;
-        //         if inp & n != 0 {
-        //             if self.config & n != 0 {
-        //                 self.hi |= out;
-        //             } else {
-        //                 self.lo |= out;
-        //             }
-        //         }
-        //     }
-        // }
+        // for all conjunctions that received a low signal
+        // send high signal to the outputs
+        for m in conjunctions {
+            let &out = self.outputs.get(&m).unwrap();
+            self.hi |= out;
+            count_hi += out.count_ones();
+            // let p = 64 - out.leading_zeros();
+            // for i in 0..p {
+            //     let n = 1 << i;
+            //     if out & n != 0 {
+            //         self.hi |= out;
+            //     }
+            // }
+        }
+        // for all conjunctions that received a high signal
+        // send low signal to the outputs
         let n = 64 - hi.leading_zeros();
         for i in 0..n {
             let m = 1 << i;
@@ -166,15 +192,41 @@ impl Modules {
                 if self.inputs.contains_key(&m) {
                     let &inp = self.inputs.get(&m).unwrap();
                     let &out = self.outputs.get(&m).unwrap();
-                    if self.config & inp != 0 {
-                        self.hi |= out;
-                    } else {
+                    //let mut count = inp.count_ones() as i32;
+                    //let t = self.config & inp;
+                    if self.config & inp == inp {
                         self.lo |= out;
+                        count_lo += out.count_ones();
+                    } else {
+                        self.hi |= out;
+                        count_hi += out.count_ones();
                     }
+                    // let p = 64 - inp.leading_zeros();
+                    // for i in 0..p {
+                    //     let n = 1 << i;
+                    //     if inp & n != 0 {
+                    //         if self.config & n != 0 {
+                    //             count -= 1;
+                    //         }
+                    //     }
+                    // }
+                    // let &out = self.outputs.get(&m).unwrap();
+                    // let p = 64 - out.leading_zeros();
+                    // for i in 0..p {
+                    //     let n = 1 << i;
+                    //     if out & n != 0 {
+                    //         if count == 0 {
+                    //             self.lo |= n;
+                    //         } else {
+                    //             self.hi |= n;
+                    //         }
+                    //     }
+                    // }
                 }
             }
         }
-        (losig, hisig)
+        //(losig, hisig)
+        (count_lo as u64, count_hi as u64)
     }
 }
 
@@ -191,8 +243,15 @@ impl fmt::Display for Modules {
 }
 
 pub fn part_one(input: &str) -> Option<u64> {
+    let input = if TEST {
+        "broadcaster -> a, b, c
+%a -> b
+%b -> c
+%c -> inv
+&inv -> a"
+    } else { input };
     let mut modules = Modules::from(input);
-    let (lo_total, hi_total) = modules.push(1000);
+    let (lo_total, hi_total) = modules.push(REPEAT);
     if VERBOSE {println!("lo: {}, hi: {}", lo_total, hi_total)};
     Some(lo_total * hi_total)
 }
