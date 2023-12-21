@@ -6,7 +6,8 @@ use std::fmt;
 
 advent_of_code::solution!(20);
 
-const VERBOSE: bool = true;
+const VERBOSE: bool = false;
+const DEBUG: bool = false;
 const TEST: bool = false;
 const REPEAT: u64 = 1000;
 
@@ -42,6 +43,7 @@ struct Modules {
     lo: u64,
 }
 impl Modules {
+
     fn from(input: &str) -> Self {
         let mut modules = Modules {
             broadcaster: 0,
@@ -58,7 +60,6 @@ impl Modules {
             match char_iter.next().unwrap() {
                 'b' => right.split(", ").for_each(|k| {
                     modules.broadcaster |= mapper.get(k);
-                    //modules.lo |= mapper.get(k);
                 }),
                 '%' => {
                     let m = mapper.get(char_iter.as_str());
@@ -84,29 +85,25 @@ impl Modules {
         for k in keys {
             for (i, o) in modules.outputs.iter() {
                 if *o & k != 0 {
-                    let v = modules.inputs.get(&k).unwrap();
-                    modules.inputs.insert(k, *v | *i);
-                    //*v |= *i;
+                    modules.inputs.insert(k,
+                        *modules.inputs.get(&k).unwrap()
+                        | *i);
                 }
             }
         }
         modules
     }
+
     fn push(&mut self, times: u64) -> (u64, u64) {
         let mut lo_total = 0;
         let mut hi_total = 0;
-        //let n = 64 - self.broadcaster.leading_zeros();
         for _ in 0..times {
             if VERBOSE {println!("=== PUSH =====================")};
-            lo_total += 1; // button signal
+            lo_total += 1; // count button signal
             self.lo |= self.broadcaster;
+            // count boradcaster signals
             lo_total += self.broadcaster.count_ones() as u64;
-            // for i in 0..n {
-            //     let m = 1 << i;
-            //     if self.broadcaster & m != 0 {
-            //         self.lo |= m;
-            //     }
-            // }
+            // and add all other signals
             loop {
                 let (losig, hisig)  = self.process();
                 if losig + hisig == 0 {
@@ -118,19 +115,19 @@ impl Modules {
         }
         (lo_total, hi_total)
     }
+
     fn process(&mut self) -> (u64, u64) {
-        let losig = self.lo.count_ones() as u64;
-        let hisig = self.hi.count_ones() as u64;
-        //println!("{}signals: {}-{}\n--------------", self, losig, hisig);
         if VERBOSE {println!("{}--------------", self)};
-        if losig + hisig == 0 {
+        if self.lo.count_ones() + self.hi.count_ones() == 0 {
             return (0, 0);
         }
-        let (lo, hi) = (self.lo, self.hi);
-        (self.lo, self.hi) = (0, 0);
         let mut conjunctions = Vec::new();
         let mut count_lo = 0;
         let mut count_hi = 0;
+        // get los and high signals and reset
+        let (lo, hi) = (self.lo, self.hi);
+        (self.lo, self.hi) = (0, 0);
+        // check all low signals
         let n = 64 - lo.leading_zeros();
         for i in 0..n {
             let m = 1 << i;
@@ -143,24 +140,10 @@ impl Modules {
                     if let Some(out) = self.outputs.get(&m) {
                         if self.config & m != 0 {
                             self.config &= !m;
-                            // let p = 64 - out.leading_zeros();
-                            // for i in 0..p {
-                            //     let n = 1 << i;
-                            //     if out & n != 0 {
-                            //         self.lo |= out;
-                            //     }
-                            // }
                             self.lo |= out;
                             count_lo += out.count_ones();
                         } else {
                             self.config |= m;
-                            // let p = 64 - out.leading_zeros();
-                            // for i in 0..p {
-                            //     let n = 1 << i;
-                            //     if out & n != 0 {
-                            //         self.hi |= out;
-                            //     }
-                            // }
                             self.hi |= out;
                             count_hi += out.count_ones();
                         }
@@ -170,17 +153,10 @@ impl Modules {
         }
         // for all conjunctions that received a low signal
         // send high signal to the outputs
-        for m in conjunctions {
+        for m in conjunctions.iter() {
             let &out = self.outputs.get(&m).unwrap();
             self.hi |= out;
             count_hi += out.count_ones();
-            // let p = 64 - out.leading_zeros();
-            // for i in 0..p {
-            //     let n = 1 << i;
-            //     if out & n != 0 {
-            //         self.hi |= out;
-            //     }
-            // }
         }
         // for all conjunctions that received a high signal
         // send low signal to the outputs
@@ -192,8 +168,6 @@ impl Modules {
                 if self.inputs.contains_key(&m) {
                     let &inp = self.inputs.get(&m).unwrap();
                     let &out = self.outputs.get(&m).unwrap();
-                    //let mut count = inp.count_ones() as i32;
-                    //let t = self.config & inp;
                     if self.config & inp == inp {
                         self.lo |= out;
                         count_lo += out.count_ones();
@@ -201,43 +175,34 @@ impl Modules {
                         self.hi |= out;
                         count_hi += out.count_ones();
                     }
-                    // let p = 64 - inp.leading_zeros();
-                    // for i in 0..p {
-                    //     let n = 1 << i;
-                    //     if inp & n != 0 {
-                    //         if self.config & n != 0 {
-                    //             count -= 1;
-                    //         }
-                    //     }
-                    // }
-                    // let &out = self.outputs.get(&m).unwrap();
-                    // let p = 64 - out.leading_zeros();
-                    // for i in 0..p {
-                    //     let n = 1 << i;
-                    //     if out & n != 0 {
-                    //         if count == 0 {
-                    //             self.lo |= n;
-                    //         } else {
-                    //             self.hi |= n;
-                    //         }
-                    //     }
-                    // }
                 }
             }
         }
-        //(losig, hisig)
         (count_lo as u64, count_hi as u64)
     }
 }
 
 impl fmt::Display for Modules {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "broadcaster: {:b}", self.broadcaster)?;
-        writeln!(f, "inputs: {:?}", self.inputs)?;
-        writeln!(f, "outputs: {:?}", self.outputs)?;
-        writeln!(f, "config: {:b}", self.config)?;
-        writeln!(f, "lohi: {:b}-{:b}",self.lo, self.hi)?;
-        // writeln!(f, "{:b} <- {:b}-{:b}", self.config, self.lo, self.hi)?;
+        if DEBUG {
+            writeln!(f, "0x{:64b} - broadcaster", self.broadcaster)?;
+            writeln!(f, "inputs:")?;
+            for (i, o) in self.inputs.iter() {
+                writeln!(f, "0x{:64b} - 0x{:64b}", i, o)?;
+            }
+            writeln!(f, "outputs:")?;
+            for (i, o) in self.outputs.iter() {
+                writeln!(f, "0x{:64b} - 0x{:64b}", i, o)?;
+            }
+            writeln!(f, "{}", "-".repeat(66))?;
+        }
+        if VERBOSE {
+            writeln!(f, "0x{:64b} - config", self.config)?;
+            writeln!(f, "0x{:64b} - low signals", self.lo)?;
+            writeln!(f, "0x{:64b} - high signals", self.hi)?;
+        } else {
+            writeln!(f, "{:b} <- {:b}-{:b}", self.config, self.lo, self.hi)?;
+        }
         Ok(())
     }
 }
@@ -257,6 +222,8 @@ pub fn part_one(input: &str) -> Option<u64> {
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
+    let modules = Modules::from(input);
+    println!("{}", modules);
     None
 }
 
